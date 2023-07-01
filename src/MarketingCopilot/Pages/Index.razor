@@ -1,0 +1,935 @@
+﻿@page "/"
+@inherits MudComponentBase
+@using AzureOpenAIBeginner.Data
+@using AzureOpenAIClient.Http
+@inject OpenAIClientService openAIClientService
+
+<MudGrid Justify="Justify.Center">
+    <MudItem xs="12">
+        <MudText Class="pb-4 mr-16">Welcome to Marketing Copilot, an OpenAI based generator of marketing content.</MudText>
+        <!-- <MudText>To create your content, simply provide trending keywords to give the marketing a theme, tell it what product you are marketing, and Marketing Copilot will generate you a number of marketing slogans.</MudText>-->
+    </MudItem>   
+    <MudItem xs="12">
+        <MudPaper>
+            <MudCard>
+                <MudCardContent>
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Step 1: Enter you own trending keywords or choose a data source </MudText>
+                        </CardHeaderContent>
+                        <CardHeaderActions />
+                    </MudCardHeader>
+                    <MudChipSet @bind-SelectedChips="selected" MultiSelection="true" Filter="filter">
+                        <MudChip Label="true" Variant="Variant.Text" Text="UserInput" Default="true" SelectedColor="Color.Success">User input</MudChip>
+                        <MudChip Disabled="true" Icon="@Icons.Custom.Brands.Google" Text="Google (unavailable)" Label="true" Color="Color.Warning">Google</MudChip>
+                        <MudChip Disabled="true" Icon="@Icons.Custom.Brands.TikTok" Text="TikTok" Label="true" Color="Color.Primary">TikTok</MudChip>
+                        <MudChip Disabled="true"  Icon="@Icons.Custom.Brands.Twitter" Label="true" Text="Twitter" Color="Color.Info">Twitter</MudChip>
+                        <MudChip Disabled="true"  Icon="@Icons.Custom.Brands.Instagram" Label="true" Text="Instagram" Color="Color.Secondary" Style="color:black;">Instagram</MudChip>
+                    </MudChipSet>
+                    <div class="d-flex flex-column align-center">
+                        @if (selected != null && selected.Length > 0)
+                        {
+                            <MudText>You selected @string.Join(", ", selected.Select(chip=>chip.Text)).</MudText>
+                        }
+                        else
+                        {
+                            <MudText>Nothing selected.</MudText>
+                        }
+                    </div>
+                    <MudTextField @bind-Value="@InFluenceText" Variant="Variant.Text" Label="Enter your trending keywords here e.g. Summer, Beach, World Cup " FullWidth="false" Lines="1"></MudTextField>
+                    <MudCardActions/>
+                </MudCardContent>
+            </MudCard>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12">
+        <MudPaper>
+            <MudCard>
+                <MudCardContent>
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Step 2: What do you want to promote?</MudText>
+                        </CardHeaderContent>
+                        <CardHeaderActions/>
+                    </MudCardHeader>
+                    <MudTextField @bind-Value="@CampaignTarget" Variant="Variant.Text" Label="Enter the brand or target of the campaign here e.g. 'our new peach smoothie drink X'" FullWidth="false" Lines="1"></MudTextField>
+                </MudCardContent>
+                <MudCardActions/>
+            </MudCard>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12">
+        <MudPaper>
+            <MudCard>
+                <MudCardContent>
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Step 3: Generate your marketing content</MudText>
+                        </CardHeaderContent>
+                        <CardHeaderActions />
+                    </MudCardHeader>
+                    <MudButton Variant="Variant.Filled" DisableElevation="true" Color="Color.Info" OnClick="CreateImpressionsOnClick">Create</MudButton>
+                    <MudProgressCircular Color="Color.Info" Size="Size.Medium" Indeterminate="true" Style="@styleHidden2" />
+                </MudCardContent>
+                <MudCardActions />
+            </MudCard>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+<MudGrid Justify="Justify.Center" Style="@styleHidden">
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item1">
+        <MudPaper>
+            <MudCard>
+                <MudCardContent>
+                    <MudCardHeader>
+                        <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                            </MudAvatar>
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@CampaignTarget 001</MudText>
+                        </CardHeaderContent> 
+                    </MudCardHeader>
+                    <MudText>@marketStatements[1]</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Medium" />
+                        View
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                        More
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudPaper>
+    </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item2">
+        <MudPaper>
+            <MudCard>
+                <MudCardContent>
+                    <MudCardHeader>
+                        <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                            </MudAvatar>
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@CampaignTarget 002</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudText>@marketStatements[2]</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Medium" />
+                        View
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                        More
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudPaper>
+    </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item3">
+        <MudPaper>
+           <MudCard>
+                <MudCardContent>
+                    <MudCardHeader>
+                        <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                            </MudAvatar>
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@CampaignTarget 003</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudText>@marketStatements[3]</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Medium" />
+                        View
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                        More
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudPaper>
+    </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item4">
+        <MudPaper>
+            <MudCard>
+                <MudCardContent>
+                    <MudCardHeader>
+                        <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                            </MudAvatar>
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@CampaignTarget 004</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudText>@marketStatements[4]</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Medium" />
+                        View
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                        More
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudPaper>
+    </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item5">
+            <MudPaper>
+                <MudCard>
+                    <MudCardContent>
+                        <MudCardHeader>
+                            <CardHeaderAvatar>
+                                <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                    <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                                </MudAvatar>
+                            </CardHeaderAvatar>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">@CampaignTarget 005</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudText>@marketStatements[5]</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Info">
+                            <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Medium" />
+                            View
+                        </MudButton>
+                        <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                            More
+                        </MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudPaper>
+        </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item6">
+            <MudPaper>
+                <MudCard>
+                    <MudCardContent>
+                        <MudCardHeader>
+                            <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                    <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                                </MudAvatar>
+                            </CardHeaderAvatar>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">@CampaignTarget 006</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudText>@marketStatements[6]</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Small" />
+                            View
+                        </MudButton>
+                        <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                            More
+                        </MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudPaper>
+        </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item7">
+        <MudPaper>
+            <MudCard>
+                <MudCardContent>
+                    <MudCardHeader>
+                        <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                            </MudAvatar>
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@CampaignTarget 007</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudText>@marketStatements[7]</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Small" />
+                        View
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                        More
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudPaper>
+    </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item8">
+            <MudPaper>
+                <MudCard>
+                    <MudCardContent>
+                        <MudCardHeader>
+                            <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                    <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                                </MudAvatar>
+                            </CardHeaderAvatar>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">@CampaignTarget 008</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudText>@marketStatements[8]</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Small" />
+                            View
+                        </MudButton>
+                        <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                            More
+                        </MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudPaper>
+        </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item9">
+            <MudPaper>
+                <MudCard>
+                    <MudCardContent>
+                        <MudCardHeader>
+                            <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                    <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                                </MudAvatar>
+                            </CardHeaderAvatar>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">@CampaignTarget 009</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudText>@marketStatements[9]</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Small" />
+                            View
+                        </MudButton>
+                        <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                            More
+                        </MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudPaper>
+        </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item10">
+            <MudPaper>
+                <MudCard>
+                    <MudCardContent>
+                        <MudCardHeader>
+                            <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                    <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                                </MudAvatar>
+                            </CardHeaderAvatar>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">@CampaignTarget 010</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudText>@marketStatements[10]</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Small" />
+                            View
+                        </MudButton>
+                        <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                            More
+                        </MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudPaper>
+        </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item11">
+            <MudPaper>
+                <MudCard>
+                    <MudCardContent>
+                        <MudCardHeader>
+                            <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                    <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                                </MudAvatar>
+                            </CardHeaderAvatar>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">@CampaignTarget 011</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudText>@marketStatements[11]</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Small" />
+                            View
+                        </MudButton>
+                        <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                            More
+                        </MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudPaper>
+        </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item12">
+            <MudPaper>
+                <MudCard>
+                    <MudCardContent>
+                        <MudCardHeader>
+                            <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                    <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                                </MudAvatar>
+                            </CardHeaderAvatar>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">@CampaignTarget 012</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudText>@marketStatements[12]</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Small" />
+                            View
+                        </MudButton>
+                        <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                            More
+                        </MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudPaper>
+        </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item13">
+            <MudPaper>
+                <MudCard>
+                    <MudCardContent>
+                        <MudCardHeader>
+                            <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                    <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                                </MudAvatar>
+                            </CardHeaderAvatar>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">@CampaignTarget 013</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudText>@marketStatements[13]</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Small" />
+                            View
+                        </MudButton>
+                        <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                            More
+                        </MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudPaper>
+        </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item14">
+        <MudPaper>
+            <MudCard>
+                <MudCardContent>
+                    <MudCardHeader>
+                        <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                            </MudAvatar>
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@CampaignTarget 014</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudText>@marketStatements[14]</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Small" />
+                        View
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                        More
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudPaper>
+    </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item15">
+        <MudPaper>
+            <MudCard>
+                <MudCardContent>
+                    <MudCardHeader>
+                        <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                            </MudAvatar>
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@CampaignTarget 015</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudText>@marketStatements[15]</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Small" />
+                        View
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                        More
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudPaper>
+    </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item16">
+        <MudPaper>
+            <MudCard>
+                <MudCardContent>
+                    <MudCardHeader>
+                        <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                            </MudAvatar>
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@CampaignTarget 016</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudText>@marketStatements[16]</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Small" />
+                        View
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                        More
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudPaper>
+    </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item17">
+        <MudPaper>
+            <MudCard>
+                <MudCardContent>
+                    <MudCardHeader>
+                        <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                            </MudAvatar>
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@CampaignTarget 017</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudText>@marketStatements[17]</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Small" />
+                        View
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                        More
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudPaper>
+    </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item18">
+        <MudPaper>
+            <MudCard>
+                <MudCardContent>
+                    <MudCardHeader>
+                        <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                            </MudAvatar>
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@CampaignTarget 018</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudText>@marketStatements[18]</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Small" />
+                        View
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                        More
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudPaper>
+    </MudItem>
+        <MudItem lg="3" md="4" sm="6" xs="12" id="item19">
+        <MudPaper>
+            <MudCard>
+                <MudCardContent>
+                    <MudCardHeader>
+                        <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                            </MudAvatar>
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@CampaignTarget 019</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudText>@marketStatements[19]</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Small" />
+                        View
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                        More
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudPaper>
+    </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item20">
+        <MudPaper>
+            <MudCard>
+                <MudCardContent>
+                    <MudCardHeader>
+                        <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                            </MudAvatar>
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@CampaignTarget 020</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudText>@marketStatements[21]</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Small" />
+                        View
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                        More
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudPaper>
+    </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item22">
+        <MudPaper>
+            <MudCard>
+                <MudCardContent>
+                    <MudCardHeader>
+                        <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                            </MudAvatar>
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@CampaignTarget 022</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudText>@marketStatements[22]</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Small" />
+                        View
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                        More
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudPaper>
+    </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item23">
+        <MudPaper>
+            <MudCard>
+                <MudCardContent>
+                    <MudCardHeader>
+                        <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                            </MudAvatar>
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@CampaignTarget 023</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudText>@marketStatements[23]</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Small" />
+                        View
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                        More
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudPaper>
+    </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item24">
+        <MudPaper>
+            <MudCard>
+                <MudCardContent>
+                    <MudCardHeader>
+                        <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                            </MudAvatar>
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@CampaignTarget 024</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudText>@marketStatements[24]</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Small" />
+                        View
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                        More
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudPaper>
+    </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item25">
+        <MudPaper>
+            <MudCard>
+                <MudCardContent>
+                    <MudCardHeader>
+                        <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                            </MudAvatar>
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@CampaignTarget 025</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudText>@marketStatements[25]</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Small" />
+                        View
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                        More
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudPaper>
+    </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item26">
+        <MudPaper>
+            <MudCard>
+                <MudCardContent>
+                    <MudCardHeader>
+                        <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                            </MudAvatar>
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@CampaignTarget 026</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudText>@marketStatements[26]</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Small" />
+                        View
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                        More
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudPaper>
+    </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item27">
+        <MudPaper>
+            <MudCard>
+                <MudCardContent>
+                    <MudCardHeader>
+                        <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                            </MudAvatar>
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@CampaignTarget 027</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudText>@marketStatements[27]</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Small" />
+                        View
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                        More
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudPaper>
+    </MudItem>
+    <MudItem lg="3" md="4" sm="6" xs="12" id="item28">
+        <MudPaper>
+            <MudCard>
+                <MudCardContent>
+                    <MudCardHeader>
+                        <CardHeaderAvatar>
+                            <MudAvatar Color="Color.Success" Size="Size.Medium">
+                                <MudIcon Icon="@Icons.Outlined.Lightbulb" Size="Size.Large" />
+                            </MudAvatar>
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@CampaignTarget 028</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudText>@marketStatements[28]</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.Campaign" Size="Size.Small" />
+                        View
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">
+                        <MudIcon Color="Color.Info" Icon="@Icons.Outlined.DensityMedium" Size="Size.Small" />
+                        More
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+<!--MudTextField @bind-Value="@responseText" Variant="Variant.Text" Label="output is here... " FullWidth="false" Lines="25"></MudTextField>-->
+
+
+@code{
+    string Sprinklr = "";
+    string Twitter = "";
+    string UserInput = "";
+
+    string InFluenceText = "";
+    string CampaignTarget = "";
+    string CompletionText = "";
+    string responseText = "";
+    string roleValue = "You are a marketing writing assistant for the company SuperBigCompany, the global drinks company. You come up with creative content ideas and content like marketing emails, blog posts, tweets, ad copy and product descriptions. You write in a friendly yet professional tone but can tailor your writing style that best works for a user-specified audience. ";
+    string requestText = "Create an un-numbered list of 28 marketing campaign statements from this information. Start each statement with a @ character an do not use this character anywhere else in the content:  ";
+
+    string[] marketStatements = new string[40];
+
+    string styleHidden = "visibility:hidden";
+    string styleHidden2 = "visibility:hidden";
+
+
+    async Task CreateImpressionsOnClick()
+    {
+        CompletionResponse? Completion;
+
+        // set up query
+        string returnValue = "";
+        CompletionText = "This is your role: " + roleValue + System.Environment.NewLine;
+        CompletionText += "We have a campaign that is promoting: " + CampaignTarget + System.Environment.NewLine;
+
+        if (InFluenceText != null)
+        {
+            CompletionText += "These are themes that should be used to influence the content: " + InFluenceText + System.Environment.NewLine;
+        }
+
+        CompletionText += requestText;
+
+        styleHidden2 = "visibility:visible";
+
+        // set completion and run query
+        if (CompletionText != null)
+        {
+            Completion = await openAIClientService.GetTextCompletionResponse(CompletionText, 1500);
+            if (Completion?.Choices.Count > 0)
+            {
+                returnValue = Completion.Choices[0].Text;
+                responseText = returnValue;
+                CompletionText += returnValue;
+            }
+
+            // parse the response to get the individual results 
+            string[] statements = returnValue.Split('@');
+
+            for (int i=0; i < statements.Length; i++)
+            {
+                marketStatements[i] = statements[i];
+
+            }
+
+
+            StateHasChanged();
+
+            styleHidden2 = "visibility:hidden";
+            styleHidden = "visibility:visible";
+        }
+    }
+    @code
+    {
+        bool filter = true;
+        MudChip[] selected;
+    }
+}
